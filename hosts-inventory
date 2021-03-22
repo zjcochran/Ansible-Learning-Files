@@ -1,0 +1,11 @@
+# hosts inventory
+
+[workers]
+worker1 ansible_host=x.x.x.x new_hostname=k3s-worker1
+worker2 ansible_host=x.x.x.x new_hostname=k3s-worker2
+
+[masters]
+master ansible_host=x.x.x.x new_hostname=k3s-master
+
+[local]
+control ansible_connection=local
