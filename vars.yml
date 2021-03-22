@@ -1,0 +1,4 @@
+# vars.yml
+
+---
+authorized_keys_path: /path/to/authorized_keys
