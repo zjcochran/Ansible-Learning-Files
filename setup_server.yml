@@ -56,22 +56,22 @@
       register: swap_check
 
     - name: "create 4G swap file"
-      command: fallocate -l 4G /swapfile
+      command: fallocate -l 4G {{ swap_file }}
       when: not swap_check.stat.exists
 
     - name: "set swap file permissions"
       file:
-        path: "/swapfile"
+        path: "{{ swap_file }}"
         owner: root
         group: root
         mode: '0600'
 
     - name: "make the swapfile"
-      command: mkswap /swapfile
+      command: mkswap {{ swap_file }}
       when: not swap_check.stat.exists
 
     - name: "turn on swap"
-      command: swapon /swapfile
+      command: swapon {{ swap_file }}
       when: not swap_check.stat.exists
 
     - name: "add swap to fstab"
