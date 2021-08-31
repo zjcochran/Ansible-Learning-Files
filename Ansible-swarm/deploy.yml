@@ -1,0 +1,32 @@
+---
+- name: check/configure pre-requisites
+  hosts: all
+  become: yes
+  roles:
+    - configure-os
+    - remove-programs
+    - install-programs
+
+- name: Install Docker
+  hosts: manager, workers
+  become: yes
+  roles:
+    - install-docker
+
+- name: Start up Docker Swarm
+  hosts: manager
+  become: yes
+  roles:
+    - init-swarm
+
+- name: Add workers to Swarm
+  hosts: workers
+  become: yes
+  roles:
+    - setup-swarm-worker
+
+- name: Stand up basic Swarm stuff
+  hosts: manager
+  become: yes
+  roles:
+    - swarm-basics

@@ -1,0 +1,14 @@
+---
+- name: Remove unwanted packages
+  apt:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - cloud-init
+    - snapd
+    - needrestart
+
+- name: Purge old configs
+  apt:
+    autoremove: yes
+    purge: yes

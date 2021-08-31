@@ -1,0 +1,32 @@
+---
+- name: Add Docker key
+  apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+    # Ubuntu alternative
+    # url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+    keyring: /usr/share/keyrings/docker-archive-keyring.gpg
+  tags: docker
+
+- name: Add Docker repo
+  apt_repository:
+    # Comment this out before setting up for 64 bit OS's
+    repo: deb [arch=armhf signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian {{ ansible_lsb.codename|lower }} stable
+    # Uncomment for 64 bit ubuntu
+    # repo: deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian {{ ansible_lsb.codename|lower }} stable
+    update_cache: yes
+  tags: docker
+
+- name: Install Docker CE
+  apt:
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+  with_items:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+  tags: docker
+
+- name: Add user pi to docker group
+  shell: "usermod -aG docker pi"

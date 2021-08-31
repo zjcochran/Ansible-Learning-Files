@@ -1,0 +1,8 @@
+---
+- name: Deploy swarm visualizer
+  shell: "docker service create --name viz --publish 8080:8080/tcp --constraint node.role==manager --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock alexellis2/visualizer-arm:latest"
+  tags: swarm-basic
+
+- name: Deploy Portainer
+  shell: "curl -L https://downloads.portainer.io/portainer-agent-stack.yml -o portainer-agent-stack.yml && docker stack deploy -c portainer-agent-stack.yml portainer"
+  tags: swarm-basic

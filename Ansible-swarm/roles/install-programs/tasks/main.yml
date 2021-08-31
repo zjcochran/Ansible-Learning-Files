@@ -1,0 +1,26 @@
+---
+- name: Install needed apps
+  apt:
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+    cache_valid_time: 86400
+  with_items:
+    - gcc
+    - etherwake
+    - nfs-common
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - gnupg
+
+- name: Copy CPU temp app source
+  copy:
+    src: "{{ role_path }}/../../files/temp.c"
+    dest: /usr/local/bin/temp.c
+
+- name: Compile CPU temp app
+  shell: gcc /usr/local/bin/temp.c -o /usr/local/bin/temp
+
+- name: Remove CPU temp app source
+  shell: rm /usr/local/bin/temp.c

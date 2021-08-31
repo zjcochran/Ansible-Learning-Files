@@ -1,0 +1,176 @@
+# setup_server.yml
+
+---
+- name: "do initial setup"
+  hosts: masters, workers
+  become: yes
+  tasks:
+    - include_vars: vars.yml
+
+    - name: "update hostnames"
+      hostname:
+        name: "{{ new_hostname }}"
+
+    - name: "set user password"
+      user: name=pi update_password=always password={{ user_pass | password_hash('sha512') }}
+
+    - name: "make .ssh directory"
+      file:
+        path: "/home/pi/.ssh"
+        state: directory
+        owner: pi
+        group: pi
+        mode: '0700'
+    - name: "copy ssh keys to remote host"
+      copy:
+        src: {{ authorized_keys_path }}
+        dest: /home/pi/.ssh/authorized_keys
+    - name: "set authorized_keys permissions"
+      file:
+        path: "/home/pi/.ssh/authorized_keys"
+        owner: pi
+        group: pi
+        mode: '0600'
+
+    - name: "update locale"
+      locale_gen:
+        name: en_US.UTF-8
+        state: present
+
+    - name: "set default locale"
+      command: localectl set-locale en_US.utf8
+
+    - name: "set timezone"
+      timezone:
+        name: America/New_York
+
+    - name: set swap_file var
+      set_fact:
+        swap_file: /swapfile
+
+    - name: "check if swap file exists"
+      stat:
+        path: "{{ swap_file }}"
+        get_checksum: False
+        get_md5: False
+      register: swap_check
+
+    - name: "create 4G swap file"
+      command: fallocate -l 4G {{ swap_file }}
+      when: not swap_check.stat.exists
+
+    - name: "set swap file permissions"
+      file:
+        path: "{{ swap_file }}"
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: "make the swapfile"
+      command: mkswap {{ swap_file }}
+      when: not swap_check.stat.exists
+
+    - name: "turn on swap"
+      command: swapon {{ swap_file }}
+      when: not swap_check.stat.exists
+
+    - name: "add swap to fstab"
+      lineinfile:
+        dest: /etc/fstab
+        regexp: "{{ swap_file }}"
+        line: "{{ swap_file }} none swap sw 0 0"
+
+    - name: "check for ll in .bashrc"
+      shell: grep -c "ls -la" /home/pi/.bashrc || true
+      register: ll_bashrc
+
+    - name: "check for temp in .bashrc"
+      shell: grep -c "vcgencmd measure_temp" /home/pi/.bashrc || true
+      register: temp_bashrc
+
+    - name: "add ll to .bashrc"
+      lineinfile:
+        dest: /home/pi/.bashrc
+        line: alias ll="ls -la"
+      when: ll_bashrc.stdout == "0"
+
+    - name: "add temp to .bashrc"
+      lineinfile: 
+        dest: /home/pi/.bashrc
+        line: alias temp="vcgencmd measure_temp"
+      when: temp_bashrc.stdout == "0"
+
+    - name: "update apt cache and upgrade packages"
+      apt:
+        upgrade: yes
+        update_cache: yes
+        cache_valid_time: 86400
+      register: result
+
+    - name: "reboot after patching"
+      reboot:
+        reboot_timeout: 300
+
+    - name: "remove outdated packages"
+      apt:
+        autoremove: yes
+
+- name: "set up k3s master"
+  hosts: masters
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "check if kubectl exists"
+      when: inventory_hostname in groups['masters']
+      stat:
+        path: "/usr/local/bin/kubectl"
+        get_checksum: False
+        get_md5: False
+      register: kubectl_check
+
+    - name: "install k3s on master"
+      when: 
+        - not kubectl_check.stat.exists
+      shell: curl -sfL https://get.k3s.io | sh -
+      args:
+        warn: no
+
+    - name: "get node-token"
+      when: inventory_hostname in groups['masters']
+      shell: cat /var/lib/rancher/k3s/server/node-token
+      register: cluster_token
+
+    - name: "create facts"
+      set_fact:
+        cluster_token: "{{ cluster_token.stdout }}"
+
+- name: "set up k3s workers"
+  hosts: workers
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "check if kubectl exists on workers"
+      stat:
+        path: "/usr/local/bin/kubectl"
+        get_checksum: False
+        get_md5: False
+      register: kubectlworker_check
+      
+    - name: "install k3s on workers"
+      when: 
+        - not kubectlworker_check.stat.exists
+      shell: curl -sfL https://get.k3s.io | K3S_URL=https://k3s-master:6443 K3S_TOKEN="{{ hostvars.master.cluster_token }}" sh -
+      args:
+        warn: no
+
+- name: "set up metallb"
+  hosts: masters
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "run command 1"
+      shell: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml
+    - name: "run command 2"
+      shell: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml
+    - name: "create secret"
+      shell: kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
