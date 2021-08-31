@@ -27,6 +27,5 @@
 
 - name: Stand up basic Swarm stuff
   hosts: manager
-  become: yes
   roles:
     - swarm-basics
