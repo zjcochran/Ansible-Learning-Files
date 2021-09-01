@@ -1,5 +1,5 @@
 # Ansible-Learning-Files
-Personal Ansible files used for learning of Ansible and Docker Swarm on Raspberry Pis.
+Personal Ansible files used for learning of Ansible and Docker Swarm on Raspberry Pis running Raspbian.
 
 Modify IP addresses in the inventory file for your Pi devices.
 
