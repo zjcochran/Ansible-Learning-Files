@@ -1,0 +1,9 @@
+---
+- name: Probe gluster peers
+  shell: "gluster peer probe swarm-worker1; gluster peer probe swarm-worker2"
+
+- name: Create gluster volume
+  shell: "gluster volume create swarm-glust replica 3 swarm-master:/gluster/swarm-vol swarm-worker1:/gluster/swarm-vol swarm-worker2:/gluster/swarm-vol force"
+
+- name: Start gluster volume
+  shell: "gluster volume start swarm-glust"

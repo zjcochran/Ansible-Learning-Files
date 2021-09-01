@@ -1,0 +1,9 @@
+---
+- name: Update /etc/fstab to remount on boot
+  shell: "echo 'localhost:/swarm-glust /mnt glusterfs defaults,_netdev,backupvolfile-server=localhost 0 0' >> /etc/fstab"
+
+- name: Do initial mount
+  shell: "mount.glusterfs localhost:/swarm-glust /mnt"
+
+- name: Update ownership
+  shell: "chown -R root:docker /mnt"
