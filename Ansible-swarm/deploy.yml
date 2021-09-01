@@ -7,6 +7,24 @@
     - remove-programs
     - install-programs
 
+- name: Set up gluster
+  hosts: manager, workers
+  become: yes
+  roles:
+    - install-gluster
+
+- name: Set up gluster shared volume
+  hosts: manager
+  become: yes
+  roles:
+    - create-shared-gluster-volume
+
+- name: Mount gluster volume
+  hosts: manager, workers
+  become: yes
+  roles:
+    - finish-gluster-swarm-setup
+
 - name: Install Docker
   hosts: manager, workers
   become: yes
@@ -27,5 +45,6 @@
 
 - name: Stand up basic Swarm stuff
   hosts: manager
+  become: yes
   roles:
     - swarm-basics
