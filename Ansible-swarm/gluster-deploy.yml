@@ -1,0 +1,18 @@
+---
+- name: Set up gluster
+  hosts: manager, workers
+  become: yes
+  roles:
+    - install-gluster
+
+- name: Set up gluster shared volume
+  hosts: manager
+  become: yes
+  roles:
+    - create-shared-gluster-volume
+
+- name: Mount gluster volume
+  hosts: manager, workers
+  become: yes
+  roles:
+    - finish-gluster-swarm-setup
